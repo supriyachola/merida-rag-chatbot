@@ -1,8 +1,11 @@
-
+import os
 import requests
 import streamlit as st
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = os.getenv(
+    "API_URL",
+    "https://merida-rag-chatbot.onrender.com"
+).rstrip("/") + "/chat"
 
 st.set_page_config(
     page_title="Merida Tech Minds RAG Chatbot",
@@ -21,6 +24,11 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+        if message.get("sources"):
+            with st.expander("Sources"):
+                for source in message["sources"]:
+                    st.markdown(f"- [{source}]({source})")
+
 question = st.chat_input("Ask about Merida Tech Minds...")
 
 if question:
@@ -35,7 +43,7 @@ if question:
         with st.spinner("Searching the website..."):
             try:
                 response = requests.post(
-                    f"{API_URL}/chat",
+                    API_URL,
                     json={"question": question},
                     timeout=120,
                 )
@@ -45,24 +53,33 @@ if question:
                 answer = data.get(
                     "answer", "Sorry, no answer was returned."
                 )
+                sources = data.get("sources", [])
+
                 st.markdown(answer)
 
-                sources = data.get("sources", [])
                 if sources:
                     with st.expander("Sources"):
                         for source in sources:
                             st.markdown(f"- [{source}]({source})")
 
-            except requests.RequestException as error:
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": answer,
+                        "sources": sources,
+                    }
+                )
+
+            except requests.RequestException:
                 answer = (
                     "I couldn't connect to the chatbot API. "
-                    "Please check that the API server is running."
+                    "Please try again shortly."
                 )
                 st.error(answer)
 
-            st.session_state.messages.append(
-                {"role": "assistant", "content": answer}
-            )
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": answer}
+                )
 
 if st.button("Clear conversation"):
     st.session_state.messages = []
