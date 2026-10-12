@@ -1,0 +1,15 @@
+
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+requests
+streamlit
+langchain-chroma
+langchain-huggingface
+langchain-google-genai
+langgraph
+typing-extensions
+sentence-transformers
+playwright
+beautifulsoup4
